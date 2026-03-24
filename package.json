@@ -1,6 +1,7 @@
 {
   "name": "revealjs-citations",
-  "version": "0.1.0",
+  "version": "0.1.2",
+  "license": "MIT",
   "description": "Citations for reveal.js with react slides with automatic per-slide source collection.",
   "type": "module",
   "main": "./dist/index.js",
