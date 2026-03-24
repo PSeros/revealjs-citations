@@ -1,4 +1,4 @@
-# @example/reveal-citations
+# revealjs-citations
 
 A small React package for `@revealjs/react` that formats citations with `citation-js` and automatically collects them per slide.
 
@@ -15,7 +15,7 @@ A small React package for `@revealjs/react` that formats citations with `citatio
 ## Installation
 
 ```bash
-npm install @reveal-citations
+npm install revealjs-citations
 ```
 
 ## Expected data format
@@ -45,7 +45,7 @@ import {
   Cite,
   CitationProvider,
   Sources,
-} from "@example/ui-citations";
+} from "reveajs-citations";
 
 import references from "./references.json";
 
@@ -162,6 +162,5 @@ The slide ID is automatically determined via the next surrounding `section`.
 
 ## Notes
 
-- `Cite` and `Sources` are Client Components.
 - For the default footnote mode, `Sources` should be rendered on the same slide.
 - If a Reveal slide already has an HTML `id`, that will be preferred.
