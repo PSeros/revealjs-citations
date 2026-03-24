@@ -1,0 +1,32 @@
+[
+  {
+    "id": "vaswani2017",
+    "type": "paper-conference",
+    "title": "Attention Is All You Need",
+    "author": [
+      { "family": "Vaswani", "given": "Ashish" },
+      { "family": "Shazeer", "given": "Noam" },
+      { "family": "Parmar", "given": "Niki" },
+      { "family": "Uszkoreit", "given": "Jakob" },
+      { "family": "Jones", "given": "Llion" },
+      { "family": "Gomez", "given": "Aidan N." },
+      { "family": "Kaiser", "given": "Łukasz" },
+      { "family": "Polosukhin", "given": "Illia" }
+    ],
+    "issued": { "date-parts": [[2017]] },
+    "container-title": "Advances in Neural Information Processing Systems"
+  },
+  {
+    "id": "devlin2019",
+    "type": "article-journal",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "author": [
+      { "family": "Devlin", "given": "Jacob" },
+      { "family": "Chang", "given": "Ming-Wei" },
+      { "family": "Lee", "given": "Kenton" },
+      { "family": "Toutanova", "given": "Kristina" }
+    ],
+    "issued": { "date-parts": [[2019]] },
+    "container-title": "NAACL-HLT"
+  }
+]
