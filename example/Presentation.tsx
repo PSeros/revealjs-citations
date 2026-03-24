@@ -1,13 +1,6 @@
-'use client'
-
-import { Deck, Slide } from '@revealjs/react'
-import {
-  Bibliography,
-  Cite,
-  CitationProvider,
-  Sources,
-} from '../src'
-import references from './references.json'
+import { Deck, Slide } from "@revealjs/react";
+import { Bibliography, Cite, CitationProvider, Sources } from "../src";
+import references from "./references.json";
 
 export default function Presentation() {
   return (
@@ -32,5 +25,5 @@ export default function Presentation() {
         </Slide>
       </Deck>
     </CitationProvider>
-  )
+  );
 }

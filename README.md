@@ -37,8 +37,6 @@ The package expects an array of CSL-JSON-like entries with a stable `id`.
 ## Basic usage
 
 ```tsx
-"use client";
-
 import { Deck, Slide } from "@revealjs/react";
 import {
   Bibliography,
@@ -56,11 +54,11 @@ export default function Presentation() {
         <Slide>
           <h2>Transformer</h2>
           <p>
-            The architecture became well known through <Cite id="vaswani2017" />
+            The architecture became well known through <Cite id="vaswani2017" /> -> [1]
             .
           </p>
           <p>
-            You can also use <Cite id="vaswani2017" inline /> inline in the
+            You can also use <Cite id="vaswani2017" inline /> -> (Vaswani et al. 2017) inline in the
             text.
           </p>
           <small>
