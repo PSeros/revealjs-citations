@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-import { formatFootnoteShortCitation } from '../lib/format'
+import { formatCitationMarker, formatFootnoteShortCitation } from '../lib/format'
 import { useSlideId } from '../lib/use-slide-id'
 import { useCitationStore } from '../store/provider'
 
@@ -25,25 +25,31 @@ export function Sources({
   const entriesById = useCitationStore((state) => state.entriesById)
   const style = useCitationStore((state) => state.style)
   const locale = useCitationStore((state) => state.locale)
+  const markerStyle = useCitationStore((state) => state.markerStyle)
   const orderedUsedIds = useCitationStore((state) => state.orderedUsedIds)
 
-  const rendered = footnoteIds
-    .map((id) => {
-      const item = entriesById[id]
-      if (!item) return null
+  const rendered = footnoteIds.reduce<Array<{id: string; content: React.ReactNode}>>((acc, id) => {
+    const item = entriesById[id]
+    if (!item) return acc
 
-      const text = formatFootnoteShortCitation(item, style, locale)
-      const markerNumber = orderedUsedIds.indexOf(id) + 1
-      return showMarkers && markerNumber > 0 ? `[${markerNumber}] ${text}` : text
+    const text = formatFootnoteShortCitation(item, style, locale)
+    const markerNumber = orderedUsedIds.indexOf(id) + 1
+    const marker = markerNumber > 0 ? formatCitationMarker([markerNumber], markerStyle) : formatCitationMarker([], markerStyle)
+
+    acc.push({
+      id,
+      content: showMarkers && markerNumber > 0 ? <>{marker} {text}</> : text,
     })
-    .filter((value): value is string => Boolean(value))
+
+    return acc
+  }, [])
 
   return (
     <Component ref={ref} className={className}>
-      {rendered.map((text, index) => (
-        <React.Fragment key={`${slideId ?? 'slide'}:${index}:${text.slice(0, 24)}`}>
+      {rendered.map(({id, content}, index) => (
+        <React.Fragment key={`${slideId ?? 'slide'}:${index}:${id}`}>
           {index > 0 ? separator : null}
-          <span>{text}</span>
+          <span>{content}</span>
         </React.Fragment>
       ))}
     </Component>

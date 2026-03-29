@@ -1,14 +1,28 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 
-import type { CitationItem, CitationVariant, SlideCitationState } from '../types'
+import type {
+  CitationInlineMode,
+  CitationItem,
+  CitationMarkerStyle,
+  CitationVariant,
+  SlideCitationState,
+} from '../types'
 
 export type CitationStoreState = {
   entriesById: Record<string, CitationItem>
   style: string
   locale: string
+  markerStyle: CitationMarkerStyle
+  defaultInlineMode: CitationInlineMode
   bySlide: Record<string, SlideCitationState>
   orderedUsedIds: string[]
-  initializeConfig: (entries: CitationItem[], style: string, locale: string) => void
+  initializeConfig: (
+    entries: CitationItem[],
+    style: string,
+    locale: string,
+    markerStyle: CitationMarkerStyle,
+    defaultInlineMode: CitationInlineMode,
+  ) => void
   registerCitation: (slideId: string, citationId: string, variant: CitationVariant) => void
   getAllUsedIds: () => string[]
   getCitationNumber: (citationId: string) => number | null
@@ -22,6 +36,8 @@ export function createCitationStore(initial?: {
   entries?: CitationItem[]
   style?: string
   locale?: string
+  markerStyle?: CitationMarkerStyle
+  defaultInlineMode?: CitationInlineMode
 }) {
   const initialEntries = initial?.entries ?? []
   const initialEntriesById = Object.fromEntries(initialEntries.map((entry) => [entry.id, entry]))
@@ -30,11 +46,13 @@ export function createCitationStore(initial?: {
     entriesById: initialEntriesById,
     style: initial?.style ?? 'apa',
     locale: initial?.locale ?? 'de-DE',
+    markerStyle: initial?.markerStyle ?? 'brackets',
+    defaultInlineMode: initial?.defaultInlineMode ?? 'parenthetical',
     bySlide: {},
     orderedUsedIds: [],
-    initializeConfig(entries, style, locale) {
+    initializeConfig(entries, style, locale, markerStyle, defaultInlineMode) {
       const entriesById = Object.fromEntries(entries.map((entry) => [entry.id, entry]))
-      set({ entriesById, style, locale })
+      set({ entriesById, style, locale, markerStyle, defaultInlineMode })
     },
     registerCitation(slideId, citationId, variant) {
       set((state) => {

@@ -5,7 +5,9 @@ A small React package for `@revealjs/react` that formats citations with `citatio
 ## Features
 
 - `<Cite id="..." />` for footnote markers by default
-- `<Cite id="..." inline />` for inline citations
+- `markerStyle="brackets" | "superscript"` on `<CitationProvider />`
+- `<Cite id={["...", "..."]} />` for grouped markers like `[1, 2]`
+- `<Cite id="..." inline="narrative" />` and `<Cite id="..." inline="parenthetical" />`
 - `<Sources />` shows only the footnote sources for the current slide
 - Footnote sources in short form, like inline citations but without parentheses
 - `<Bibliography />` generates a global bibliography from all sources used in the deck
@@ -49,7 +51,13 @@ import references from "./references.json";
 
 export default function Presentation() {
   return (
-    <CitationProvider entries={references} style="apa" locale="de-DE">
+    <CitationProvider
+  entries={references}
+  style="apa"
+  locale="de-DE"
+  markerStyle="brackets"
+  defaultInlineMode="parenthetical"
+>
       <Deck>
         <Slide>
           <h2>Transformer</h2>
@@ -58,8 +66,12 @@ export default function Presentation() {
             .
           </p>
           <p>
-            You can also use <Cite id="vaswani2017" inline /> -> (Vaswani et al. 2017) inline in the
-            text.
+            You can also use <Cite id="vaswani2017" inline="parenthetical" /> -> (Vaswani et al. 2017)
+            inline in the text.
+          </p>
+          <p>
+            Or narrative citations: <Cite id="vaswani2017" inline="narrative" /> -> Vaswani et al.
+            (2017).
           </p>
           <small>
             <Sources />
@@ -81,7 +93,13 @@ export default function Presentation() {
 ### `CitationProvider`
 
 ```tsx
-<CitationProvider entries={references} style="apa" locale="de-DE">
+<CitationProvider
+  entries={references}
+  style="apa"
+  locale="de-DE"
+  markerStyle="brackets"
+  defaultInlineMode="parenthetical"
+>
   {children}
 </CitationProvider>
 ```
@@ -91,18 +109,22 @@ Props:
 - `entries`: array of citations with `id`
 - `style`: CSL style, default `apa`
 - `locale`: language/locale, default `de-DE`
+- `markerStyle`: `"brackets" | "superscript"`, default `"brackets"`
+- `defaultInlineMode`: fallback for `inline={true}`, default `"parenthetical"`
 
 ### `Cite`
 
 ```tsx
 <Cite id="vaswani2017" />
-<Cite id="vaswani2017" inline />
+<Cite id={["vaswani2017", "devlin2019"]} />
+<Cite id="vaswani2017" inline="narrative" />
+<Cite id="vaswani2017" inline="parenthetical" />
 ```
 
 Props:
 
-- `id: string`
-- `inline?: boolean`
+- `id: string | string[]`
+- `inline?: boolean | "narrative" | "parenthetical"`
 - `prefix?: string`
 - `suffix?: string`
 - `className?: string`
@@ -110,7 +132,10 @@ Props:
 Behavior:
 
 - Default is footnote mode and renders a global marker like `[1]`, `[2]`, ... according to the first use in the entire deck
-- `inline` renders a normal in-text citation
+- Multiple IDs are rendered as grouped markers like `[1, 2]`
+- `inline="narrative"` renders `Vaswani et al. (2017)`
+- `inline="parenthetical"` renders `(Vaswani et al. 2017)`
+- `inline={true}` uses the provider default from `defaultInlineMode`
 
 ### `Sources`
 

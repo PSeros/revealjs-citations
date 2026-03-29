@@ -4,7 +4,13 @@ import references from "./references.json";
 
 export default function Presentation() {
   return (
-    <CitationProvider entries={references} style="apa" locale="de-DE">
+    <CitationProvider
+      entries={references}
+      style="apa"
+      locale="de-DE"
+      markerStyle="brackets"
+      defaultInlineMode="parenthetical"
+    >
       <Deck>
         <Slide>
           <h2>Transformer</h2>
@@ -12,7 +18,13 @@ export default function Presentation() {
             Bekannt wurde die Architektur durch <Cite id="vaswani2017" />.
           </p>
           <p>
-            Im Fließtext steht dann <Cite id="devlin2019" inline />.
+            Gruppierte Quellen funktionieren ebenfalls: <Cite id={["vaswani2017", "devlin2019"]} />.
+          </p>
+          <p>
+            Narrativ: <Cite id="devlin2019" inline="narrative" />.
+          </p>
+          <p>
+            Parenthetisch: <Cite id="devlin2019" inline="parenthetical" />.
           </p>
           <small>
             <Sources />

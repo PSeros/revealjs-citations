@@ -2,49 +2,69 @@
 
 import React, {useEffect} from 'react'
 
-import {formatInlineCitation} from '../lib/format'
+import {formatCitationMarker, formatInlineCitation} from '../lib/format'
 import {useSlideId} from '../lib/use-slide-id'
 import {useCitationStore, useCitationStoreApi} from '../store/provider'
+import type {CitationInlineMode} from '../types'
 
 export type CiteProps = {
-  id: string
-  inline?: boolean
+  id: string | string[]
+  inline?: boolean | CitationInlineMode
   className?: string
   prefix?: string
   suffix?: string
 }
 
 export function Cite({
-                       id,
-                       inline = false,
-                       className,
-                       prefix = '',
-                       suffix = '',
-                     }: CiteProps) {
+  id,
+  inline = false,
+  className,
+  prefix = '',
+  suffix = '',
+}: CiteProps) {
   const {ref, slideId} = useSlideId<HTMLSpanElement>()
   const store = useCitationStoreApi()
+  const ids = Array.isArray(id) ? id : [id]
 
-  const item = useCitationStore((state) => state.entriesById[id])
+  const entriesById = useCitationStore((state) => state.entriesById)
   const style = useCitationStore((state) => state.style)
   const locale = useCitationStore((state) => state.locale)
-  const citationNumber = useCitationStore((state) => state.orderedUsedIds.indexOf(id) + 1)
+  const markerStyle = useCitationStore((state) => state.markerStyle)
+  const defaultInlineMode = useCitationStore((state) => state.defaultInlineMode)
+  const orderedUsedIds = useCitationStore((state) => state.orderedUsedIds)
+
+  const items = ids.map((citationId) => entriesById[citationId]).filter(Boolean)
+  const missingIds = ids.filter((citationId) => !entriesById[citationId])
+  const citationNumbers = ids
+    .map((citationId) => orderedUsedIds.indexOf(citationId) + 1)
+    .filter((number) => number > 0)
+
+  const inlineMode: CitationInlineMode | false =
+    inline === false ? false : inline === true ? defaultInlineMode : inline
 
   useEffect(() => {
     if (!slideId) return
-    if (!item) return
+    if (items.length === 0) return
 
-    store.getState().registerCitation(slideId, id, inline ? 'inline' : 'footnote')
-  }, [slideId, id, inline, item, store])
+    const variant = inlineMode ? 'inline' : 'footnote'
+    for (const citationId of ids) {
+      if (entriesById[citationId]) {
+        store.getState().registerCitation(slideId, citationId, variant)
+      }
+    }
+  }, [slideId, ids, inlineMode, items.length, entriesById, store])
 
-  if (!item) {
+  if (missingIds.length > 0) {
     return (
       <span ref={ref} className={className}>
-        [missing citation: {id}]
+        [missing citation: {missingIds.join(', ')}]
       </span>
     )
   }
 
-  const content = inline ? formatInlineCitation(item, style, locale) : citationNumber > 0 ? `[${citationNumber}]` : '[?]'
+  const content = inlineMode
+    ? formatInlineCitation(items, style, locale, inlineMode)
+    : formatCitationMarker(citationNumbers, markerStyle)
 
   return (
     <span ref={ref} className={className}>

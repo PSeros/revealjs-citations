@@ -2,6 +2,8 @@ import * as react_jsx_runtime from 'react/jsx-runtime';
 import React from 'react';
 
 type CitationVariant = 'inline' | 'footnote';
+type CitationMarkerStyle = 'brackets' | 'superscript';
+type CitationInlineMode = 'narrative' | 'parenthetical';
 type CitationItem = {
     id: string;
     [key: string]: unknown;
@@ -15,13 +17,15 @@ type CitationProviderProps = {
     entries: CitationItem[];
     style?: string;
     locale?: string;
+    markerStyle?: CitationMarkerStyle;
+    defaultInlineMode?: CitationInlineMode;
     children?: React.ReactNode;
 };
-declare function CitationProvider({ entries, style, locale, children, }: CitationProviderProps): react_jsx_runtime.JSX.Element;
+declare function CitationProvider({ entries, style, locale, markerStyle, defaultInlineMode, children, }: CitationProviderProps): react_jsx_runtime.JSX.Element;
 
 type CiteProps = {
-    id: string;
-    inline?: boolean;
+    id: string | string[];
+    inline?: boolean | CitationInlineMode;
     className?: string;
     prefix?: string;
     suffix?: string;

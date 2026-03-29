@@ -8,7 +8,7 @@ import {
   type CitationStore,
   type CitationStoreState,
 } from './citation-store'
-import type {CitationItem} from '../types'
+import type {CitationInlineMode, CitationItem, CitationMarkerStyle} from '../types'
 
 const CitationStoreContext = createContext<CitationStore | null>(null)
 
@@ -16,22 +16,26 @@ export type CitationProviderProps = {
   entries: CitationItem[]
   style?: string
   locale?: string
+  markerStyle?: CitationMarkerStyle
+  defaultInlineMode?: CitationInlineMode
   children?: React.ReactNode
 }
 
 export function CitationProvider({
-                                   entries,
-                                   style = 'apa',
-                                   locale = 'de-DE',
-                                   children,
-                                 }: CitationProviderProps) {
+  entries,
+  style = 'apa',
+  locale = 'de-DE',
+  markerStyle = 'brackets',
+  defaultInlineMode = 'parenthetical',
+  children,
+}: CitationProviderProps) {
   const [store] = useState(() =>
-    createCitationStore({entries, style, locale})
+    createCitationStore({entries, style, locale, markerStyle, defaultInlineMode})
   )
 
   useEffect(() => {
-    store.getState().initializeConfig(entries, style, locale)
-  }, [store, entries, style, locale])
+    store.getState().initializeConfig(entries, style, locale, markerStyle, defaultInlineMode)
+  }, [store, entries, style, locale, markerStyle, defaultInlineMode])
 
   return (
     <CitationStoreContext.Provider value={store}>

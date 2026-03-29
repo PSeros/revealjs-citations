@@ -1,6 +1,6 @@
 {
   "name": "revealjs-citations",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "description": "Citations for reveal.js with react slides with automatic per-slide source collection.",
   "homepage": "https://github.com/PSeros/revealjs-citations#readme",
   "bugs": {

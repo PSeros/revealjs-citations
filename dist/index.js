@@ -14,11 +14,13 @@ function createCitationStore(initial) {
     entriesById: initialEntriesById,
     style: initial?.style ?? "apa",
     locale: initial?.locale ?? "de-DE",
+    markerStyle: initial?.markerStyle ?? "brackets",
+    defaultInlineMode: initial?.defaultInlineMode ?? "parenthetical",
     bySlide: {},
     orderedUsedIds: [],
-    initializeConfig(entries, style, locale) {
+    initializeConfig(entries, style, locale, markerStyle, defaultInlineMode) {
       const entriesById = Object.fromEntries(entries.map((entry) => [entry.id, entry]));
-      set({ entriesById, style, locale });
+      set({ entriesById, style, locale, markerStyle, defaultInlineMode });
     },
     registerCitation(slideId, citationId, variant) {
       set((state) => {
@@ -61,14 +63,16 @@ function CitationProvider({
   entries,
   style = "apa",
   locale = "de-DE",
+  markerStyle = "brackets",
+  defaultInlineMode = "parenthetical",
   children
 }) {
   const [store] = useState(
-    () => createCitationStore({ entries, style, locale })
+    () => createCitationStore({ entries, style, locale, markerStyle, defaultInlineMode })
   );
   useEffect(() => {
-    store.getState().initializeConfig(entries, style, locale);
-  }, [store, entries, style, locale]);
+    store.getState().initializeConfig(entries, style, locale, markerStyle, defaultInlineMode);
+  }, [store, entries, style, locale, markerStyle, defaultInlineMode]);
   return /* @__PURE__ */ jsx(CitationStoreContext.Provider, { value: store, children });
 }
 function useCitationStore(selector) {
@@ -90,17 +94,44 @@ function useCitationStoreApi() {
 import { useEffect as useEffect3 } from "react";
 
 // src/lib/format.ts
+import React2 from "react";
 import Cite from "citation-js";
-function formatInlineCitation(item, style, locale) {
-  const cite = new Cite(item);
-  return cite.format("citation", {
-    template: style,
-    lang: locale,
-    format: "text"
-  });
+function formatSingleNarrativeCitation(item, style, locale) {
+  const cite = new Cite([item]);
+  const authorOnly = String(
+    cite.format("citation", {
+      template: style,
+      lang: locale,
+      format: "text",
+      entry: [{ id: item.id, "author-only": true }]
+    })
+  ).trim().replace(/[;,]\s*$/g, "");
+  const suppressAuthor = String(
+    cite.format("citation", {
+      template: style,
+      lang: locale,
+      format: "text",
+      entry: [{ id: item.id, "suppress-author": true }]
+    })
+  ).trim();
+  return `${authorOnly} ${suppressAuthor}`.trim();
+}
+function formatInlineCitation(items, style, locale, mode = "parenthetical") {
+  if (items.length === 0) return "";
+  if (mode === "narrative") {
+    return items.map((item) => formatSingleNarrativeCitation(item, style, locale)).join("; ");
+  }
+  const cite = new Cite(items);
+  return String(
+    cite.format("citation", {
+      template: style,
+      lang: locale,
+      format: "text"
+    })
+  ).trim();
 }
 function formatFootnoteShortCitation(item, style, locale) {
-  const inline = formatInlineCitation(item, style, locale).trim();
+  const inline = formatInlineCitation([item], style, locale, "narrative").trim();
   return inline.replace(/^\((.*)\)$/s, "$1").trim();
 }
 function formatBibliographyHtml(items, style, locale) {
@@ -110,6 +141,16 @@ function formatBibliographyHtml(items, style, locale) {
     lang: locale,
     format: "html"
   });
+}
+function formatCitationMarker(numbers, markerStyle = "brackets") {
+  if (numbers.length === 0) {
+    return markerStyle === "superscript" ? React2.createElement("sup", null, "?") : "[?]";
+  }
+  const text = numbers.join(", ");
+  if (markerStyle === "superscript") {
+    return React2.createElement("sup", null, text);
+  }
+  return `[${text}]`;
 }
 
 // src/lib/use-slide-id.ts
@@ -156,23 +197,35 @@ function Cite2({
 }) {
   const { ref, slideId } = useSlideId();
   const store = useCitationStoreApi();
-  const item = useCitationStore((state) => state.entriesById[id]);
+  const ids = Array.isArray(id) ? id : [id];
+  const entriesById = useCitationStore((state) => state.entriesById);
   const style = useCitationStore((state) => state.style);
   const locale = useCitationStore((state) => state.locale);
-  const citationNumber = useCitationStore((state) => state.orderedUsedIds.indexOf(id) + 1);
+  const markerStyle = useCitationStore((state) => state.markerStyle);
+  const defaultInlineMode = useCitationStore((state) => state.defaultInlineMode);
+  const orderedUsedIds = useCitationStore((state) => state.orderedUsedIds);
+  const items = ids.map((citationId) => entriesById[citationId]).filter(Boolean);
+  const missingIds = ids.filter((citationId) => !entriesById[citationId]);
+  const citationNumbers = ids.map((citationId) => orderedUsedIds.indexOf(citationId) + 1).filter((number) => number > 0);
+  const inlineMode = inline === false ? false : inline === true ? defaultInlineMode : inline;
   useEffect3(() => {
     if (!slideId) return;
-    if (!item) return;
-    store.getState().registerCitation(slideId, id, inline ? "inline" : "footnote");
-  }, [slideId, id, inline, item, store]);
-  if (!item) {
+    if (items.length === 0) return;
+    const variant = inlineMode ? "inline" : "footnote";
+    for (const citationId of ids) {
+      if (entriesById[citationId]) {
+        store.getState().registerCitation(slideId, citationId, variant);
+      }
+    }
+  }, [slideId, ids, inlineMode, items.length, entriesById, store]);
+  if (missingIds.length > 0) {
     return /* @__PURE__ */ jsxs("span", { ref, className, children: [
       "[missing citation: ",
-      id,
+      missingIds.join(", "),
       "]"
     ] });
   }
-  const content = inline ? formatInlineCitation(item, style, locale) : citationNumber > 0 ? `[${citationNumber}]` : "[?]";
+  const content = inlineMode ? formatInlineCitation(items, style, locale, inlineMode) : formatCitationMarker(citationNumbers, markerStyle);
   return /* @__PURE__ */ jsxs("span", { ref, className, children: [
     prefix,
     content,
@@ -197,8 +250,8 @@ function Bibliography({ ids, className, as: Component = "div" }) {
 }
 
 // src/components/Sources.tsx
-import React3 from "react";
-import { jsx as jsx3, jsxs as jsxs2 } from "react/jsx-runtime";
+import React4 from "react";
+import { Fragment, jsx as jsx3, jsxs as jsxs2 } from "react/jsx-runtime";
 function Sources({
   className,
   as: Component = "div",
@@ -211,18 +264,28 @@ function Sources({
   const entriesById = useCitationStore((state) => state.entriesById);
   const style = useCitationStore((state) => state.style);
   const locale = useCitationStore((state) => state.locale);
+  const markerStyle = useCitationStore((state) => state.markerStyle);
   const orderedUsedIds = useCitationStore((state) => state.orderedUsedIds);
-  const rendered = footnoteIds.map((id) => {
+  const rendered = footnoteIds.reduce((acc, id) => {
     const item = entriesById[id];
-    if (!item) return null;
+    if (!item) return acc;
     const text = formatFootnoteShortCitation(item, style, locale);
     const markerNumber = orderedUsedIds.indexOf(id) + 1;
-    return showMarkers && markerNumber > 0 ? `[${markerNumber}] ${text}` : text;
-  }).filter((value) => Boolean(value));
-  return /* @__PURE__ */ jsx3(Component, { ref, className, children: rendered.map((text, index) => /* @__PURE__ */ jsxs2(React3.Fragment, { children: [
+    const marker = markerNumber > 0 ? formatCitationMarker([markerNumber], markerStyle) : formatCitationMarker([], markerStyle);
+    acc.push({
+      id,
+      content: showMarkers && markerNumber > 0 ? /* @__PURE__ */ jsxs2(Fragment, { children: [
+        marker,
+        " ",
+        text
+      ] }) : text
+    });
+    return acc;
+  }, []);
+  return /* @__PURE__ */ jsx3(Component, { ref, className, children: rendered.map(({ id, content }, index) => /* @__PURE__ */ jsxs2(React4.Fragment, { children: [
     index > 0 ? separator : null,
-    /* @__PURE__ */ jsx3("span", { children: text })
-  ] }, `${slideId ?? "slide"}:${index}:${text.slice(0, 24)}`)) });
+    /* @__PURE__ */ jsx3("span", { children: content })
+  ] }, `${slideId ?? "slide"}:${index}:${id}`)) });
 }
 var FootnoteSources = Sources;
 export {
