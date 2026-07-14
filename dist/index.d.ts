@@ -36,9 +36,8 @@ type BibliographyProps = {
     ids?: string[];
     className?: string;
     as?: React.ElementType;
-    itemsPerSlide?: number | false;
 };
-declare function Bibliography({ ids, className, as: Component, itemsPerSlide, }: BibliographyProps): react_jsx_runtime.JSX.Element;
+declare function Bibliography({ ids, className, as: Component }: BibliographyProps): react_jsx_runtime.JSX.Element;
 
 type SourcesProps = {
     className?: string;
@@ -49,4 +48,11 @@ type SourcesProps = {
 declare function Sources({ className, as: Component, separator, showMarkers, }: SourcesProps): react_jsx_runtime.JSX.Element;
 declare const FootnoteSources: typeof Sources;
 
-export { Bibliography, type BibliographyProps, type CitationItem, CitationProvider, type CitationProviderProps, type CitationVariant, Cite, type CiteProps, FootnoteSources, type SlideCitationState, Sources, type SourcesProps };
+type BibliographyEntry = {
+    id: string;
+    html: string;
+};
+
+declare function useBibliographyEntries(ids?: string[]): BibliographyEntry[];
+
+export { Bibliography, type BibliographyEntry, type BibliographyProps, type CitationItem, CitationProvider, type CitationProviderProps, type CitationVariant, Cite, type CiteProps, FootnoteSources, type SlideCitationState, Sources, type SourcesProps, useBibliographyEntries };

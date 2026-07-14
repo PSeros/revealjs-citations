@@ -11,6 +11,7 @@ A small React package for `@revealjs/react` that formats citations with `citatio
 - `<Sources />` shows only the footnote sources for the current slide
 - Footnote sources in short form, like inline citations but without parentheses
 - `<Bibliography />` generates a global bibliography from all sources used in the deck
+- `useBibliographyEntries()` returns the bibliography as an array so you can paginate or customize the layout yourself
 - automatic slide assignment via the next surrounding `section`
 - only one public wrapper: `<CitationProvider />`
 
@@ -165,12 +166,49 @@ Props:
 - `ids?: string[]` – optionally define manually
 - `className?: string`
 - `as?: React.ElementType`
-- `itemsPerSlide?: number | false` – default `8`. Sources beyond this count
-  automatically overflow into additional nested `<section>` elements, which
-  reveal.js renders as a vertical stack under the enclosing `<Slide>`. Pass
-  `false` to disable pagination and always render every source into a single
-  slide (the pre-existing behavior). Entry numbers for numeric CSL styles
-  stay consistent across the paginated sections.
+
+Renders every requested source into a single element. For large bibliographies
+this can overflow a slide — use `useBibliographyEntries` below if you need to
+split the bibliography across multiple slides.
+
+### `useBibliographyEntries`
+
+```tsx
+import { Slide, Stack } from "@revealjs/react";
+import { useBibliographyEntries } from "revealjs-citations";
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+    arr.slice(i * size, i * size + size)
+  );
+}
+
+function ReferencesSlides() {
+  const entries = useBibliographyEntries();
+  const pages = chunk(entries, 5); // pick a size that fits your theme
+
+  return (
+    <Stack>
+      {pages.map((page, i) => (
+        <Slide key={i}>
+          <h2>References{pages.length > 1 ? ` (${i + 1}/${pages.length})` : ""}</h2>
+          {page.map((entry) => (
+            <div key={entry.id} dangerouslySetInnerHTML={{ __html: entry.html }} />
+          ))}
+        </Slide>
+      ))}
+    </Stack>
+  );
+}
+```
+
+`useBibliographyEntries(ids?: string[]): { id: string; html: string }[]` returns
+one formatted HTML fragment per source, in bibliography order. Entry numbers
+for numeric CSL styles (e.g. `vancouver`) stay correct even when you split
+entries across slides, since the whole bibliography is formatted once
+internally before being split per entry. This hook renders nothing itself —
+you decide how many entries go on a slide, how to group them, and how to
+style them.
 
 ## Internal architecture
 
@@ -193,7 +231,3 @@ The slide ID is automatically determined via the next surrounding `section`.
 
 - For the default footnote mode, `Sources` should be rendered on the same slide.
 - If a Reveal slide already has an HTML `id`, that will be preferred.
-- When `Bibliography` paginates (see `itemsPerSlide`), a heading placed above
-  it (e.g. `<h2>References</h2>`) only appears on the first vertical
-  sub-slide, since only the `Bibliography` output itself is split into
-  multiple `<section>`s.

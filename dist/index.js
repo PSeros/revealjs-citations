@@ -142,10 +142,10 @@ function formatBibliographyHtml(items, style, locale) {
     format: "html"
   });
 }
-function splitCslBibliographyHtml(html, itemsPerSlide) {
-  const bodyMatch = html.match(/^([\s\S]*?<div[^>]*\bclass="csl-bib-body"[^>]*>)([\s\S]*)(<\/div>\s*)$/);
-  if (!bodyMatch) return [html];
-  const [, openTag, inner, closeTag] = bodyMatch;
+function splitCslBibliographyHtml(html) {
+  const bodyMatch = html.match(/^[\s\S]*?<div[^>]*\bclass="csl-bib-body"[^>]*>([\s\S]*)<\/div>\s*$/);
+  if (!bodyMatch) return [];
+  const [, inner] = bodyMatch;
   const entries = [];
   const tagRe = /<div\b[^>]*>|<\/div>/g;
   let depth = 0;
@@ -158,19 +158,19 @@ function splitCslBibliographyHtml(html, itemsPerSlide) {
     } else {
       depth--;
       if (depth === 0) {
-        entries.push(inner.slice(entryStart, tagRe.lastIndex));
+        const entryHtml = inner.slice(entryStart, tagRe.lastIndex);
+        const idMatch = entryHtml.match(/data-csl-entry-id="([^"]*)"/);
+        if (idMatch) {
+          entries.push({ id: idMatch[1], html: entryHtml });
+        }
       }
     }
   }
-  const chunks = [];
-  for (let i = 0; i < entries.length; i += itemsPerSlide) {
-    chunks.push(openTag + entries.slice(i, i + itemsPerSlide).join("") + closeTag);
-  }
-  return chunks.length > 0 ? chunks : [html];
+  return entries;
 }
-function formatBibliographyHtmlChunks(items, style, locale, itemsPerSlide) {
+function formatBibliographyEntries(items, style, locale) {
   const html = formatBibliographyHtml(items, style, locale);
-  return splitCslBibliographyHtml(String(html), itemsPerSlide);
+  return splitCslBibliographyHtml(String(html));
 }
 function formatCitationMarker(numbers, markerStyle = "brackets") {
   if (numbers.length === 0) {
@@ -264,14 +264,8 @@ function Cite2({
 }
 
 // src/components/Bibliography.tsx
-import { Fragment, jsx as jsx2 } from "react/jsx-runtime";
-var DEFAULT_ITEMS_PER_SLIDE = 8;
-function Bibliography({
-  ids,
-  className,
-  as: Component = "div",
-  itemsPerSlide = DEFAULT_ITEMS_PER_SLIDE
-}) {
+import { jsx as jsx2 } from "react/jsx-runtime";
+function Bibliography({ ids, className, as: Component = "div" }) {
   const entriesById = useCitationStore((state) => state.entriesById);
   const orderedUsedIds = useCitationStore((state) => state.orderedUsedIds);
   const style = useCitationStore((state) => state.style);
@@ -281,17 +275,13 @@ function Bibliography({
   if (items.length === 0) {
     return /* @__PURE__ */ jsx2(Component, { className });
   }
-  if (itemsPerSlide !== false && items.length > itemsPerSlide) {
-    const chunks = formatBibliographyHtmlChunks(items, style, locale, itemsPerSlide);
-    return /* @__PURE__ */ jsx2(Fragment, { children: chunks.map((html2, index) => /* @__PURE__ */ jsx2("section", { className, dangerouslySetInnerHTML: { __html: html2 } }, index)) });
-  }
   const html = formatBibliographyHtml(items, style, locale);
   return /* @__PURE__ */ jsx2(Component, { className, dangerouslySetInnerHTML: { __html: html } });
 }
 
 // src/components/Sources.tsx
 import React4 from "react";
-import { Fragment as Fragment2, jsx as jsx3, jsxs as jsxs2 } from "react/jsx-runtime";
+import { Fragment, jsx as jsx3, jsxs as jsxs2 } from "react/jsx-runtime";
 function Sources({
   className,
   as: Component = "div",
@@ -314,7 +304,7 @@ function Sources({
     const marker = markerNumber > 0 ? formatCitationMarker([markerNumber], markerStyle) : formatCitationMarker([], markerStyle);
     acc.push({
       id,
-      content: showMarkers && markerNumber > 0 ? /* @__PURE__ */ jsxs2(Fragment2, { children: [
+      content: showMarkers && markerNumber > 0 ? /* @__PURE__ */ jsxs2(Fragment, { children: [
         marker,
         " ",
         text
@@ -328,11 +318,24 @@ function Sources({
   ] }, `${slideId ?? "slide"}:${index}:${id}`)) });
 }
 var FootnoteSources = Sources;
+
+// src/lib/use-bibliography-entries.ts
+function useBibliographyEntries(ids) {
+  const entriesById = useCitationStore((state) => state.entriesById);
+  const orderedUsedIds = useCitationStore((state) => state.orderedUsedIds);
+  const style = useCitationStore((state) => state.style);
+  const locale = useCitationStore((state) => state.locale);
+  const resolvedIds = ids ?? orderedUsedIds;
+  const items = resolvedIds.map((id) => entriesById[id]).filter((item) => Boolean(item));
+  if (items.length === 0) return [];
+  return formatBibliographyEntries(items, style, locale);
+}
 export {
   Bibliography,
   CitationProvider,
   Cite2 as Cite,
   FootnoteSources,
-  Sources
+  Sources,
+  useBibliographyEntries
 };
 //# sourceMappingURL=index.js.map

@@ -100,21 +100,26 @@ export function formatBibliographyHtml(items: CitationItem[], style: string, loc
   })
 }
 
+export type BibliographyEntry = {
+  id: string
+  html: string
+}
+
 // citeproc renumbers numeric styles (e.g. vancouver) relative to whichever
-// entries are included in a single `.format()` call, so filtering per chunk
-// via the `entry` option would restart numbering at 1 on every slide. To
-// keep numbering consistent with the manual marker numbers used elsewhere
-// in this package (see Sources.tsx), we format the full, correctly-numbered
-// bibliography once and split the resulting HTML string into per-entry
-// chunks instead.
-function splitCslBibliographyHtml(html: string, itemsPerSlide: number): string[] {
-  const bodyMatch = html.match(/^([\s\S]*?<div[^>]*\bclass="csl-bib-body"[^>]*>)([\s\S]*)(<\/div>\s*)$/)
+// entries are included in a single `.format()` call, so formatting each
+// entry with its own `Cite`/`entry` filter would restart numbering at 1
+// for every entry. To keep numbering consistent with the manual marker
+// numbers used elsewhere in this package (see Sources.tsx), we format the
+// full, correctly-numbered bibliography once and split the resulting HTML
+// string into per-entry fragments instead.
+function splitCslBibliographyHtml(html: string): BibliographyEntry[] {
+  const bodyMatch = html.match(/^[\s\S]*?<div[^>]*\bclass="csl-bib-body"[^>]*>([\s\S]*)<\/div>\s*$/)
 
-  if (!bodyMatch) return [html]
+  if (!bodyMatch) return []
 
-  const [, openTag, inner, closeTag] = bodyMatch
+  const [, inner] = bodyMatch
 
-  const entries: string[] = []
+  const entries: BibliographyEntry[] = []
   const tagRe = /<div\b[^>]*>|<\/div>/g
   let depth = 0
   let entryStart = -1
@@ -127,29 +132,23 @@ function splitCslBibliographyHtml(html: string, itemsPerSlide: number): string[]
     } else {
       depth--
       if (depth === 0) {
-        entries.push(inner.slice(entryStart, tagRe.lastIndex))
+        const entryHtml = inner.slice(entryStart, tagRe.lastIndex)
+        const idMatch = entryHtml.match(/data-csl-entry-id="([^"]*)"/)
+
+        if (idMatch) {
+          entries.push({ id: idMatch[1], html: entryHtml })
+        }
       }
     }
   }
 
-  const chunks: string[] = []
-
-  for (let i = 0; i < entries.length; i += itemsPerSlide) {
-    chunks.push(openTag + entries.slice(i, i + itemsPerSlide).join('') + closeTag)
-  }
-
-  return chunks.length > 0 ? chunks : [html]
+  return entries
 }
 
-export function formatBibliographyHtmlChunks(
-  items: CitationItem[],
-  style: string,
-  locale: string,
-  itemsPerSlide: number,
-) {
+export function formatBibliographyEntries(items: CitationItem[], style: string, locale: string): BibliographyEntry[] {
   const html = formatBibliographyHtml(items, style, locale)
 
-  return splitCslBibliographyHtml(String(html), itemsPerSlide)
+  return splitCslBibliographyHtml(String(html))
 }
 
 export function formatCitationMarker(numbers: number[], markerStyle: CitationMarkerStyle = 'brackets'): React.ReactNode {
