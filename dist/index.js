@@ -142,6 +142,36 @@ function formatBibliographyHtml(items, style, locale) {
     format: "html"
   });
 }
+function splitCslBibliographyHtml(html, itemsPerSlide) {
+  const bodyMatch = html.match(/^([\s\S]*?<div[^>]*\bclass="csl-bib-body"[^>]*>)([\s\S]*)(<\/div>\s*)$/);
+  if (!bodyMatch) return [html];
+  const [, openTag, inner, closeTag] = bodyMatch;
+  const entries = [];
+  const tagRe = /<div\b[^>]*>|<\/div>/g;
+  let depth = 0;
+  let entryStart = -1;
+  let match;
+  while (match = tagRe.exec(inner)) {
+    if (!match[0].startsWith("</")) {
+      if (depth === 0) entryStart = match.index;
+      depth++;
+    } else {
+      depth--;
+      if (depth === 0) {
+        entries.push(inner.slice(entryStart, tagRe.lastIndex));
+      }
+    }
+  }
+  const chunks = [];
+  for (let i = 0; i < entries.length; i += itemsPerSlide) {
+    chunks.push(openTag + entries.slice(i, i + itemsPerSlide).join("") + closeTag);
+  }
+  return chunks.length > 0 ? chunks : [html];
+}
+function formatBibliographyHtmlChunks(items, style, locale, itemsPerSlide) {
+  const html = formatBibliographyHtml(items, style, locale);
+  return splitCslBibliographyHtml(String(html), itemsPerSlide);
+}
 function formatCitationMarker(numbers, markerStyle = "brackets") {
   if (numbers.length === 0) {
     return markerStyle === "superscript" ? React2.createElement("sup", null, "?") : "[?]";
@@ -234,8 +264,14 @@ function Cite2({
 }
 
 // src/components/Bibliography.tsx
-import { jsx as jsx2 } from "react/jsx-runtime";
-function Bibliography({ ids, className, as: Component = "div" }) {
+import { Fragment, jsx as jsx2 } from "react/jsx-runtime";
+var DEFAULT_ITEMS_PER_SLIDE = 8;
+function Bibliography({
+  ids,
+  className,
+  as: Component = "div",
+  itemsPerSlide = DEFAULT_ITEMS_PER_SLIDE
+}) {
   const entriesById = useCitationStore((state) => state.entriesById);
   const orderedUsedIds = useCitationStore((state) => state.orderedUsedIds);
   const style = useCitationStore((state) => state.style);
@@ -245,13 +281,17 @@ function Bibliography({ ids, className, as: Component = "div" }) {
   if (items.length === 0) {
     return /* @__PURE__ */ jsx2(Component, { className });
   }
+  if (itemsPerSlide !== false && items.length > itemsPerSlide) {
+    const chunks = formatBibliographyHtmlChunks(items, style, locale, itemsPerSlide);
+    return /* @__PURE__ */ jsx2(Fragment, { children: chunks.map((html2, index) => /* @__PURE__ */ jsx2("section", { className, dangerouslySetInnerHTML: { __html: html2 } }, index)) });
+  }
   const html = formatBibliographyHtml(items, style, locale);
   return /* @__PURE__ */ jsx2(Component, { className, dangerouslySetInnerHTML: { __html: html } });
 }
 
 // src/components/Sources.tsx
 import React4 from "react";
-import { Fragment, jsx as jsx3, jsxs as jsxs2 } from "react/jsx-runtime";
+import { Fragment as Fragment2, jsx as jsx3, jsxs as jsxs2 } from "react/jsx-runtime";
 function Sources({
   className,
   as: Component = "div",
@@ -274,7 +314,7 @@ function Sources({
     const marker = markerNumber > 0 ? formatCitationMarker([markerNumber], markerStyle) : formatCitationMarker([], markerStyle);
     acc.push({
       id,
-      content: showMarkers && markerNumber > 0 ? /* @__PURE__ */ jsxs2(Fragment, { children: [
+      content: showMarkers && markerNumber > 0 ? /* @__PURE__ */ jsxs2(Fragment2, { children: [
         marker,
         " ",
         text

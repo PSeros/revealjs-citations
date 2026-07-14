@@ -36,8 +36,9 @@ type BibliographyProps = {
     ids?: string[];
     className?: string;
     as?: React.ElementType;
+    itemsPerSlide?: number | false;
 };
-declare function Bibliography({ ids, className, as: Component }: BibliographyProps): react_jsx_runtime.JSX.Element;
+declare function Bibliography({ ids, className, as: Component, itemsPerSlide, }: BibliographyProps): react_jsx_runtime.JSX.Element;
 
 type SourcesProps = {
     className?: string;

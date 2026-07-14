@@ -165,6 +165,12 @@ Props:
 - `ids?: string[]` – optionally define manually
 - `className?: string`
 - `as?: React.ElementType`
+- `itemsPerSlide?: number | false` – default `8`. Sources beyond this count
+  automatically overflow into additional nested `<section>` elements, which
+  reveal.js renders as a vertical stack under the enclosing `<Slide>`. Pass
+  `false` to disable pagination and always render every source into a single
+  slide (the pre-existing behavior). Entry numbers for numeric CSL styles
+  stay consistent across the paginated sections.
 
 ## Internal architecture
 
@@ -187,3 +193,7 @@ The slide ID is automatically determined via the next surrounding `section`.
 
 - For the default footnote mode, `Sources` should be rendered on the same slide.
 - If a Reveal slide already has an HTML `id`, that will be preferred.
+- When `Bibliography` paginates (see `itemsPerSlide`), a heading placed above
+  it (e.g. `<h2>References</h2>`) only appears on the first vertical
+  sub-slide, since only the `Bibliography` output itself is split into
+  multiple `<section>`s.
